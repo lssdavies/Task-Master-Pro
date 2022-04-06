@@ -47,9 +47,9 @@ $(".list-group").on("click", "p", function () {
   //assigns the tag and innerhtml to text and .text() takes only the textcontnent and .trim removes the white spaces before and after
   var text = $(this).text().trim();
   console.log(text);
-  // textInput is assignd a textarea for tag,assigned a class and text is added as its value 
+  // textInput is assignd a textarea for tag,assigned a class and text is added as its value
   var textInput = $("<textarea>").addClass("form-control").val(text);
-  //.replaceWith changes the above p tag to the textarea so we can edit the task. 
+  //.replaceWith changes the above p tag to the textarea so we can edit the task.
   $(this).replaceWith(textInput);
   textInput.trigger("focus");
 });
@@ -76,11 +76,9 @@ $(".list-group").on("blur", "textarea", function () {
 
 // Adding the ability to edit due date=============
 // due date was clicked
-$(".list-group").on("click", "span", function() {
+$(".list-group").on("click", "span", function () {
   // get current text
-  var date = $(this)
-    .text()
-    .trim();
+  var date = $(this).text().trim();
 
   // create new input element
   var dateInput = $("<input>")
@@ -96,22 +94,15 @@ $(".list-group").on("click", "span", function() {
 });
 
 // value of due date was changed and neeeds to be changed back to a no editable element
-$(".list-group").on("blur", "input[type='text']", function() {
+$(".list-group").on("blur", "input[type='text']", function () {
   // get current text
-  var date = $(this)
-    .val()
-    .trim();
+  var date = $(this).val().trim();
 
   // get the parent ul's id attribute
-  var status = $(this)
-    .closest(".list-group")
-    .attr("id")
-    .replace("list-", "");
+  var status = $(this).closest(".list-group").attr("id").replace("list-", "");
 
   // get the task's position in the list of other li elements
-  var index = $(this)
-    .closest(".list-group-item")
-    .index();
+  var index = $(this).closest(".list-group-item").index();
 
   // update task in array and re-save to localstorage
   tasks[status][index].date = date;
@@ -124,6 +115,78 @@ $(".list-group").on("blur", "input[type='text']", function() {
 
   // replace input with span element
   $(this).replaceWith(taskSpan);
+});
+
+//adding sortable from jQuery UI to allow dragging and droping of ul elements with class list-group
+$(".card .list-group").sortable({
+  connectWith: $(".card .list-group"),
+  scroll: false,
+  tolerance: "pointer",
+  helper: "clone",
+  activate: function (event) {
+    console.log("activate", this);
+  },
+  deactivate: function (event) {
+    console.log("deactivate", this);
+  },
+  over: function (event) {
+    console.log("over", event.target);
+  },
+  out: function (event) {
+    console.log("out", event.target);
+  },
+  update: function (event) {
+    // array to store the task data in
+    var tempArr = [];
+
+    // loop over current set of children in sortable list
+    $(this)
+      .children()
+      .each(function () {
+        var text = $(this).find("p").text().trim();
+
+        var date = $(this).find("span").text().trim();
+
+        // add task data to the temp array as an object
+        tempArr.push({
+          text: text,
+          date: date,
+        });
+      });
+    console.log(tempArr);
+
+    // trim down list's ID to match object property
+    var arrName = $(this).attr("id").replace("list-", "");
+
+    // update array on tasks object and save
+    tasks[arrName] = tempArr;
+    saveTasks();
+  },
+});
+/**helper: "clone" that tells jQuery to create a copy of the dragged element and move the copy instead of the original. This is necessary to prevent click events from accidentally triggering on the original element. We also added several event listeners like activate, over, and out. 
+The children() method returns an array of the list element's children (the <li> elements, labeled as li.list-group-item). No coincidence, tasks are saved in localStorage as an array. The order of these <li> elements and the indexes in the task arrays should match one-to-one. This means we just need to loop over the elements, pushing their text values into a new tasks array.
+jQuery's each() method will run a callback function for every item/element in the array. It's another form of looping, except that a function is now called on each loop iteration. The potentially confusing part of this code is the second use of $(this). Inside the callback function, $(this) actually refers to the child element at that index.
+These values ultimately need to go in an array. Let's declare a new array before the looping starts. Then instead of console logging the values in the loop, we'll combine them into an object and push this object into the array.
+he next step is to use the tempArr array to overwrite what's currently saved in the tasks object. We're dealing with multiple lists, though, not just toDo. How do we know when to update tasks.toDo versus tasks.inReview or tasks.done?
+
+We solved a similar problem earlier in the project when dealing with blur events. Each list has an id attribute that matches a property on tasks. For instance: id="list-inReview". We'll use the same approach here to get the list's ID and update the corresponding array on tasks. 
+* 
+*/
+
+// Adding drag to trash using jQuery UI
+$("#trash").droppable({
+  accept: ".card .list-group-item",
+  tolerance: "touch",
+  drop: function (event, ui) {
+    console.log("drop");
+    ui.draggable.remove(); //draggable is "a jQuery object representing the draggable element. Allows us to track which item is being dragged and dropped in trash
+  },
+  over: function (event, ui) {
+    console.log("over");
+  },
+  out: function (event, ui) {
+    console.log("out");
+  },
 });
 
 // modal was triggered
